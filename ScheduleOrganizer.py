@@ -117,7 +117,10 @@ def print_professors(professors):
     print("========== TEACHERS ==========")
     for i in range(1, len(professors) + 1):
         prof = professors[i]
-        print("Professor", prof.prof_no, "=== Evaluation:", prof.evaluation, "=== Can Teach:", prof.courses)
+        print("Professor", prof.prof_no, "=== Evaluation:", prof.evaluation, "=== Can Teach:", end="")
+        for j in prof.courses:
+            print ("", j.name + ",", end="")
+        print()
     print()
 
 
@@ -127,12 +130,14 @@ def print_classes(classes, professors):
         c = chr(i + 97).upper()
         print("Class", c, "=== Teachable By:", end="")
         for j in classes[c].teachers:
-            print("", j.prof_no, ",", end="")
+            print("", str(j.prof_no) + ",", end="")
 
-        print("=== Best Choice: Professor", find_best_professor(c, professors).prof_no)
+        print("=== Best Choice: Professor", find_best_professor(classes[c], professors).prof_no)
     print()
 
 
+# Go through all given available professors and find the best
+# one for the best class
 def find_best_professor(target_class, available_professors):
     found_prof = Professor(-5, -5, list())
 
@@ -144,6 +149,8 @@ def find_best_professor(target_class, available_professors):
     return found_prof
 
 
+# Assigns target class to targer professor
+# if professor is available
 def assign_class_to_prof(c, prof):
     if len(prof.assigned_courses) >= 2:
         return
@@ -151,6 +158,7 @@ def assign_class_to_prof(c, prof):
     return prof.assign_course(c)
 
 
+# DFS Helper
 def depth_first_search_helper(tree, vertex):
     print(vertex)
 
@@ -158,10 +166,12 @@ def depth_first_search_helper(tree, vertex):
         depth_first_search_helper(tree, i)
 
 
+# DFS Algorithm
 def depth_first_search(tree, vertex):
     depth_first_search_helper(tree, vertex)
 
 
+# Make the tree with all the scheduling options
 def make_tree(root):
     root.result()
     for n in root.children:
@@ -181,10 +191,10 @@ def main():
     profs, classes = read_file(path)
     root = Node(profs, classes)
 
-    tree = make_tree(root)
+    #tree = make_tree(root)
 
-    #print_professors(profs)
-    #print_classes(classes, profs)
+    print_professors(profs)
+    print_classes(classes, profs)
 
 
 main()
