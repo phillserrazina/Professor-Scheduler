@@ -9,23 +9,18 @@ class Professor:
         self.evaluation = evaluation
         self.courses = list_of_courses
         self.assigned_courses = list()
-        self.is_available = len(self.assigned_courses) < 2
 
     def assign_course(self, course):
         if self.is_available is False:
             print("Professor ", self.prof_no, " already has 2 assigned courses! (", self.assigned_courses[0], ", ", self.assigned_courses[1], ")")
-            return False
-
-        if course not in self.courses:
-            print("Course", course.name, "is not available.")
-            return False
 
         print("Assigned", course.name, "to", self.prof_no)
 
         self.assigned_courses.append(course)
-        i = self.courses.index(course)
-        self.courses.pop(i)
-        return True
+        course.assigned_teacher = self
+
+    def is_available(self):
+        return len(self.assigned_courses) < 2
 
 
 class Course:
@@ -33,41 +28,7 @@ class Course:
         self.name = name
         self.teachers = teachers
         self.assigned_teacher = None
-
-
-class Node:
-    def __init__(self, prof, courses):
-        self.professors = prof
-        self.courses = courses
-        self.children = list()
-
-    def insert_children(self, c):
-        self.children.append(c)
-
-    def get_child(self, elem):
-        for child in self.children:
-            if child.element == elem:
-                return child
-
-    def actions(self):
-        actions = []
-
-        for c in self.courses.values():
-            for p in c.teachers:
-                if p.is_available:
-                    actions.append((c, p))
-
-        return actions
-
-    def result(self):
-        act = self.actions()
-
-        while act:
-            r = act.pop(0)
-            available = assign_class_to_prof(r[0], r[1])
-
-            if available:
-                self.insert_children(Node(self.professors, self.courses))
+        self.no_teachers_available = False
 
 
 tk_root = tk.Tk()
@@ -119,7 +80,7 @@ def print_professors(professors):
         prof = professors[i]
         print("Professor", prof.prof_no, "=== Evaluation:", prof.evaluation, "=== Can Teach:", end="")
         for j in prof.courses:
-            print ("", j.name + ",", end="")
+            print("", j.name + ",", end="")
         print()
     print()
 
@@ -143,41 +104,90 @@ def find_best_professor(target_class, available_professors):
 
     for prof in available_professors.values():
         if target_class in prof.courses:
-            if prof.evaluation > found_prof.evaluation:
+            if prof.evaluation > found_prof.evaluation and prof.is_available():
                 found_prof = prof
+
+    if found_prof.prof_no < 0:
+        target_class.no_teachers_available = True
+        return None
 
     return found_prof
 
 
-# Assigns target class to targer professor
+# Assigns target class to target professor
 # if professor is available
 def assign_class_to_prof(c, prof):
-    if len(prof.assigned_courses) >= 2:
+    if not prof.is_available():
+        print(prof.prof_no, "is not available.")
         return
 
     return prof.assign_course(c)
 
 
-# DFS Helper
-def depth_first_search_helper(tree, vertex):
-    print(vertex)
+def get_lowest_available_class(classes):
+    temp = 20
+    answer = None
 
-    for i in tree.children:
-        depth_first_search_helper(tree, i)
+    for i in range(0, len(classes.items())):
+        c = chr(i + 97).upper()
+        if temp > len(classes[c].teachers):
+            if classes[c].assigned_teacher is None and not classes[c].no_teachers_available:
+                answer = classes[c]
+                temp = len(classes[c].teachers)
+
+    return answer
 
 
-# DFS Algorithm
-def depth_first_search(tree, vertex):
-    depth_first_search_helper(tree, vertex)
+def all_classes_assigned(classes):
+    for i in range(0, len(classes.items())):
+        c = chr(i + 97).upper()
+        if classes[c].assigned_teacher is None and not classes[c].no_teachers_available:
+            return False
+
+    return True
 
 
-# Make the tree with all the scheduling options
-def make_tree(root):
-    root.result()
-    for n in root.children:
-        make_tree(n)
+def schedule(classes, professors):
+    while not all_classes_assigned(classes):
+        c = get_lowest_available_class(classes)
+        p = find_best_professor(c, professors)
 
-    return root
+        if p is None:
+            print("No professor found for", c.name)
+            continue
+
+        assign_class_to_prof(c, p)
+
+
+def print_class_schedule(classes):
+    for i in range(0, len(classes.items())):
+        c = chr(i + 97).upper()
+        if classes[c].no_teachers_available:
+            print("Class", c, "assigned to: No Professor Available")
+        else:
+            print("Class", c, "assigned to: Professor", classes[c].assigned_teacher.prof_no)
+
+
+def print_professor_schedule(professors):
+    for i in range(1, len(professors) + 1):
+        if i not in professors.keys():
+            return
+
+        prof = professors[i]
+        print("Professor", prof.prof_no, "assigned to: [", end="")
+
+        for j in prof.assigned_courses:
+            print("", j.name + ",", end="")
+
+        print("]")
+
+
+def resign_professor(prof_no, professors, classes):
+    for c in professors[prof_no].assigned_courses:
+        c.assigned_teacher = None
+
+    professors.pop(prof_no)
+    schedule(classes, professors)
 
 
 # DRIVER
@@ -189,12 +199,34 @@ def main():
         return
 
     profs, classes = read_file(path)
-    root = Node(profs, classes)
-
-    #tree = make_tree(root)
 
     print_professors(profs)
     print_classes(classes, profs)
+
+    print()
+    print("======= ASSIGNMENT =======")
+    schedule(classes, profs)
+
+    print()
+    print("=======  CLASS SCHEDULE  =======")
+    print_class_schedule(classes)
+
+    print()
+    print("=======  PROFESSOR SCHEDULE  =======")
+    print_professor_schedule(profs)
+
+    print()
+    print("====== PROFESSOR RESIGN - EXTRA CREDIT ======")
+    # Resign professor 35, for example
+    resign_professor(28, profs, classes)
+
+    print()
+    print("=======  CLASS SCHEDULE  =======")
+    print_class_schedule(classes)
+
+    print()
+    print("=======  PROFESSOR SCHEDULE  =======")
+    print_professor_schedule(profs)
 
 
 main()
