@@ -10,15 +10,19 @@ class Professor:
         self.courses = list_of_courses
         self.assigned_courses = list()
 
+    # Assigns course to professor if available
     def assign_course(self, course):
-        if self.is_available is False:
+        if self.is_available() is False:
             print("Professor ", self.prof_no, " already has 2 assigned courses! (", self.assigned_courses[0], ", ", self.assigned_courses[1], ")")
 
         print("Assigned", course.name, "to", self.prof_no)
 
+        # Add course to this professor's assigned courses
         self.assigned_courses.append(course)
+        # Assign this professor to target course
         course.assigned_teacher = self
 
+    # Check if professor is available
     def is_available(self):
         return len(self.assigned_courses) < 2
 
@@ -103,11 +107,15 @@ def find_best_professor(target_class, available_professors):
     found_prof = Professor(-5, -5, list())
 
     for prof in available_professors.values():
+        # If current prof can teach the class
         if target_class in prof.courses:
+            # If current prof as higher eval than last one, and is available
             if prof.evaluation > found_prof.evaluation and prof.is_available():
                 found_prof = prof
 
+    # If no professors were found
     if found_prof.prof_no < 0:
+        # No teachers are available for this class
         target_class.no_teachers_available = True
         return None
 
@@ -128,16 +136,21 @@ def get_lowest_available_class(classes):
     temp = 20
     answer = None
 
+    # Go through all classes
     for i in range(0, len(classes.items())):
         c = chr(i + 97).upper()
+        # If current class has less professors to teach it
         if temp > len(classes[c].teachers):
+            # If current classes is still not assigned and has available teachers
             if classes[c].assigned_teacher is None and not classes[c].no_teachers_available:
+                # Make current class the answer
                 answer = classes[c]
                 temp = len(classes[c].teachers)
 
     return answer
 
 
+# Go through all classes and check if all have been assigned
 def all_classes_assigned(classes):
     for i in range(0, len(classes.items())):
         c = chr(i + 97).upper()
@@ -148,14 +161,19 @@ def all_classes_assigned(classes):
 
 
 def schedule(classes, professors):
+    # While not all classes have been assigned
     while not all_classes_assigned(classes):
+        # Find the lowest class
         c = get_lowest_available_class(classes)
+        # Find the best professor for said class
         p = find_best_professor(c, professors)
 
+        # Skip this class if no teachers are available
         if p is None:
             print("No professor found for", c.name)
             continue
 
+        # Assign found professor to class
         assign_class_to_prof(c, p)
 
 
@@ -182,11 +200,15 @@ def print_professor_schedule(professors):
         print("]")
 
 
+# EXTRA CREDIT - Able to resign professor and adjust schedule
 def resign_professor(prof_no, professors, classes):
+    # Desassign all classes that this professor was teaching
     for c in professors[prof_no].assigned_courses:
         c.assigned_teacher = None
 
+    # Remove it from the professor pool
     professors.pop(prof_no)
+    # Reschedule
     schedule(classes, professors)
 
 
@@ -215,6 +237,7 @@ def main():
     print("=======  PROFESSOR SCHEDULE  =======")
     print_professor_schedule(profs)
 
+    # EXTRA CREDIT - PROFESSOR RESIGNMENT
     print()
     print("====== PROFESSOR RESIGN - EXTRA CREDIT ======")
     # Resign professor 35, for example
@@ -227,6 +250,7 @@ def main():
     print()
     print("=======  PROFESSOR SCHEDULE  =======")
     print_professor_schedule(profs)
+    
 
 
 main()
